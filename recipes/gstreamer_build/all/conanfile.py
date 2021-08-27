@@ -18,7 +18,7 @@ class GStreamerBuildConan(ConanFile):
     license = "GPL-2.0-only"
     settings = "os", "arch", "compiler", "build_type"
     options = {"shared": [True, False], "fPIC": [True, False],
-               # subproject options
+               # subproject options -- forward to meson
                "python": ['enabled', 'auto', 'disabled'],
                "libav": ['enabled', 'auto', 'disabled'],
                "libnice": ['enabled', 'auto', 'disabled'],
@@ -36,7 +36,7 @@ class GStreamerBuildConan(ConanFile):
                "gst_examples": ['enabled', 'auto', 'disabled'],
                "tls": ['enabled', 'auto', 'disabled'],
                "qt5": ['enabled', 'auto', 'disabled'],
-               # other options
+               # other options -- forward to meson
                "custom_subprojects": "ANY",
                "gst_full_libraries": "ANY",
                "gst_full_version_script": "ANY",
@@ -45,7 +45,7 @@ class GStreamerBuildConan(ConanFile):
                "gst_full_typefind_functions": "ANY",
                "gst_full_device_providers": "ANY",
                "gst_full_dynamic_types": "ANY",
-               # common options
+               # common options -- forward to meson
                "tests": ['enabled', 'auto', 'disabled'],
                "examples": ['enabled', 'auto', 'disabled'],
                "introspection": ['enabled', 'auto', 'disabled'],
@@ -53,6 +53,8 @@ class GStreamerBuildConan(ConanFile):
                "orc": ['enabled', 'auto', 'disabled'],
                "doc": ['enabled', 'auto', 'disabled'],
                "gtk_doc": ['enabled', 'auto', 'disabled'],
+               # this recipe build options
+               "keep_gstreamer_package_names": [True, False]
                }
 
     # https://gitlab.freedesktop.org/gstreamer/gst-build/-/blob/master/meson_options.txt
@@ -88,7 +90,8 @@ class GStreamerBuildConan(ConanFile):
                        "nls": "auto",
                        "orc": "auto",
                        "doc": "auto",
-                       "gtk_doc": "disabled"
+                       "gtk_doc": "disabled",
+                       "keep_gstreamer_package_names": False,
                        }
     generators = "pkg_config"
     _meson = None
@@ -121,12 +124,12 @@ class GStreamerBuildConan(ConanFile):
     def build_requirements(self):
         self.build_requires("meson/0.56.2")
         self.build_requires("pkgconf/1.7.3")
-        self.build_requires("gtk/4.1.2")
         if self.settings.os == 'Windows':
             self.build_requires("winflexbison/2.5.22")
         else:
             self.build_requires("bison/3.7.1")
             self.build_requires("flex/2.6.4")
+            self.build_requires("gtk/4.1.2")
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version])
@@ -134,36 +137,37 @@ class GStreamerBuildConan(ConanFile):
 
     def _get_pkg_config_paths(self):
 
-        pkg_config_paths = []
+        pkg_config_paths = [self.build_folder]
         if self.settings.os == 'Linux':
             pkg_config_paths = [
                 '/usr/lib/x86_64-linux-gnu/pkgconfig', '/usr/share/pkgconfig']
-            subprojects_dir = os.sep.join(
-                [self.build_folder, 'build_subfolder', 'subprojects'])
 
-            # always add base gstreamer path
+        subprojects_dir = os.sep.join(
+            [self.build_folder, 'build_subfolder', 'subprojects'])
+
+        # always add base gstreamer path
+        pkg_config_paths.append(os.sep.join(
+            [subprojects_dir, 'gstreamer', 'pkgconfig']))
+
+        # conditionally add more paths if the options are turned on
+        if self.options.base:
             pkg_config_paths.append(os.sep.join(
-                [subprojects_dir, 'gstreamer', 'pkgconfig']))
-
-            # conditionally add more paths if the options are turned on
-            if self.options.base:
-                pkg_config_paths.append(os.sep.join(
-                    [subprojects_dir, 'gst-plugins-base', 'pkgconfig']))
-            if self.options.bad:
-                pkg_config_paths.append(os.sep.join(
-                    [subprojects_dir, 'gst-plugins-bad', 'pkgconfig']))
-            if self.options.rtsp_server:
-                pkg_config_paths.append(os.sep.join(
-                    [subprojects_dir, 'gst-rtsp-server', 'pkgconfig']))
-            if self.options.devtools:
-                pkg_config_paths.append(os.sep.join(
-                    [subprojects_dir, 'gst-devtools', 'pkgconfig']))
-            if self.options.orc:
-                pkg_config_paths.append(os.sep.join([subprojects_dir, 'orc']))
-
-            # always add gst-editing-services pkgconfig path (not sure if the trigger)
+                [subprojects_dir, 'gst-plugins-base', 'pkgconfig']))
+        if self.options.bad:
             pkg_config_paths.append(os.sep.join(
-                [subprojects_dir, 'gst-editing-services', 'pkgconfig']))
+                [subprojects_dir, 'gst-plugins-bad', 'pkgconfig']))
+        if self.options.rtsp_server:
+            pkg_config_paths.append(os.sep.join(
+                [subprojects_dir, 'gst-rtsp-server', 'pkgconfig']))
+        if self.options.devtools:
+            pkg_config_paths.append(os.sep.join(
+                [subprojects_dir, 'gst-devtools', 'pkgconfig']))
+        if self.options.orc:
+            pkg_config_paths.append(os.sep.join([subprojects_dir, 'orc']))
+
+        # always add gst-editing-services pkgconfig path (not sure if the trigger)
+        pkg_config_paths.append(os.sep.join(
+            [subprojects_dir, 'gst-editing-services', 'pkgconfig']))
 
         return pkg_config_paths
 
@@ -227,6 +231,7 @@ class GStreamerBuildConan(ConanFile):
             'PKG_CONFIG_PATH': ':'.join(pkg_config_paths)}
 
         with tools.environment_append(env_vars):
+            self.output.info('pkg_config_paths:' + str(pkg_config_paths))
             meson = self._configure_meson(pkg_config_paths)
             meson.build()
 
@@ -255,9 +260,13 @@ class GStreamerBuildConan(ConanFile):
         self._fix_library_names(os.path.join(self.package_folder, "lib"))
         self._fix_library_names(os.path.join(
             self.package_folder, "lib", "gstreamer-1.0"))
-        tools.rmdir(os.path.join(self.package_folder, "lib", "pkgconfig"))
-        tools.rmdir(os.path.join(self.package_folder,
-                                 "lib", "gstreamer-1.0", "pkgconfig"))
+
+        if not self.options.keep_gstreamer_package_names:
+            self.output.info('Removing gstreamer-generated pkg-config files')
+            tools.rmdir(os.path.join(self.package_folder, "lib", "pkgconfig"))
+            tools.rmdir(os.path.join(self.package_folder,
+                                     "lib", "gstreamer-1.0", "pkgconfig"))
+        
         tools.rmdir(os.path.join(self.package_folder, "share"))
         tools.remove_files_by_mask(self.package_folder, "*.pdb")
 
@@ -347,3 +356,10 @@ class GStreamerBuildConan(ConanFile):
             self.output.info(
                 "Creating GSTREAMER_ROOT_X86_64 env var : %s" % gstreamer_root)
             self.env_info.GSTREAMER_ROOT_X86_64 = gstreamer_root
+
+        if self.options.keep_gstreamer_package_names:
+            pkg_config_path = os.path.join(
+                self.package_folder, 'lib', 'pkgconfig'
+            )
+            self.output.info("Creating PKG_CONFIG_PATH env var : %s" % pkg_config_path)
+            self.env_info.PKG_CONFIG_PATH = pkg_config_path
