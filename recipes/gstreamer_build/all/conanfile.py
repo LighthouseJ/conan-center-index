@@ -118,13 +118,13 @@ class GStreamerBuildConan(ConanFile):
         del self.settings.compiler.cppstd
 
     def config_options(self):
-        if self.settings.os == 'Windows':
+        if tools.os_info.is_windows:
             del self.options.fPIC
 
     def build_requirements(self):
         self.build_requires("meson/0.56.2")
         self.build_requires("pkgconf/1.7.3")
-        if self.settings.os == 'Windows':
+        if tools.os_info.is_windows:
             self.build_requires("winflexbison/2.5.22")
         else:
             self.build_requires("bison/3.7.1")
@@ -138,7 +138,7 @@ class GStreamerBuildConan(ConanFile):
     def _get_pkg_config_paths(self):
 
         pkg_config_paths = [self.build_folder]
-        if self.settings.os == 'Linux':
+        if tools.os_info.is_linux:
             pkg_config_paths = [
                 '/usr/lib/x86_64-linux-gnu/pkgconfig', '/usr/share/pkgconfig']
 
@@ -231,7 +231,6 @@ class GStreamerBuildConan(ConanFile):
             'PKG_CONFIG_PATH': ':'.join(pkg_config_paths)}
 
         with tools.environment_append(env_vars):
-            self.output.info('pkg_config_paths:' + str(pkg_config_paths))
             meson = self._configure_meson(pkg_config_paths)
             meson.build()
 
@@ -266,7 +265,7 @@ class GStreamerBuildConan(ConanFile):
             tools.rmdir(os.path.join(self.package_folder, "lib", "pkgconfig"))
             tools.rmdir(os.path.join(self.package_folder,
                                      "lib", "gstreamer-1.0", "pkgconfig"))
-        
+
         tools.rmdir(os.path.join(self.package_folder, "share"))
         tools.remove_files_by_mask(self.package_folder, "*.pdb")
 
@@ -342,7 +341,7 @@ class GStreamerBuildConan(ConanFile):
         self.output.info("Creating GSTREAMER_ROOT env var : %s" %
                          gstreamer_root)
         self.env_info.GSTREAMER_ROOT = gstreamer_root
-        gst_plugin_scanner = "gst-plugin-scanner.exe" if self.settings.os == "Windows" else "gst-plugin-scanner"
+        gst_plugin_scanner = "gst-plugin-scanner.exe" if tools.os_info.is_windows else "gst-plugin-scanner"
         gst_plugin_scanner = os.path.join(
             self.package_folder, "bin", "gstreamer-1.0", gst_plugin_scanner)
         self.output.info(
@@ -361,5 +360,6 @@ class GStreamerBuildConan(ConanFile):
             pkg_config_path = os.path.join(
                 self.package_folder, 'lib', 'pkgconfig'
             )
-            self.output.info("Creating PKG_CONFIG_PATH env var : %s" % pkg_config_path)
+            self.output.info(
+                "Creating PKG_CONFIG_PATH env var : %s" % pkg_config_path)
             self.env_info.PKG_CONFIG_PATH = pkg_config_path
