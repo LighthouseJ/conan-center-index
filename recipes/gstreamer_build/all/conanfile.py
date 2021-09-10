@@ -123,7 +123,7 @@ class GStreamerBuildConan(ConanFile):
 
     def build_requirements(self):
         self.build_requires("meson/0.56.2")
-        self.build_requires("pkgconf/1.7.3")
+        self.build_requires("pkgconf/1.7.4")
         if tools.os_info.is_windows:
             self.build_requires("winflexbison/2.5.22")
         else:
@@ -138,9 +138,6 @@ class GStreamerBuildConan(ConanFile):
     def _get_pkg_config_paths(self):
 
         pkg_config_paths = [self.build_folder]
-        if tools.os_info.is_linux:
-            pkg_config_paths = [
-                '/usr/lib/x86_64-linux-gnu/pkgconfig', '/usr/share/pkgconfig']
 
         subprojects_dir = os.sep.join(
             [self.build_folder, 'build_subfolder', 'subprojects'])
@@ -150,24 +147,29 @@ class GStreamerBuildConan(ConanFile):
             [subprojects_dir, 'gstreamer', 'pkgconfig']))
 
         # conditionally add more paths if the options are turned on
-        if self.options.base:
+        if self.options.base != 'disabled':
             pkg_config_paths.append(os.sep.join(
                 [subprojects_dir, 'gst-plugins-base', 'pkgconfig']))
-        if self.options.bad:
+        if self.options.bad != 'disabled':
             pkg_config_paths.append(os.sep.join(
                 [subprojects_dir, 'gst-plugins-bad', 'pkgconfig']))
-        if self.options.rtsp_server:
+        if self.options.rtsp_server != 'disabled':
             pkg_config_paths.append(os.sep.join(
                 [subprojects_dir, 'gst-rtsp-server', 'pkgconfig']))
-        if self.options.devtools:
+        if self.options.devtools != 'disabled':
             pkg_config_paths.append(os.sep.join(
                 [subprojects_dir, 'gst-devtools', 'pkgconfig']))
-        if self.options.orc:
+        if self.options.orc != 'disabled':
             pkg_config_paths.append(os.sep.join([subprojects_dir, 'orc']))
 
         # always add gst-editing-services pkgconfig path (not sure if the trigger)
         pkg_config_paths.append(os.sep.join(
             [subprojects_dir, 'gst-editing-services', 'pkgconfig']))
+
+        # append system paths as a fallback
+        if tools.os_info.is_linux:
+            pkg_config_paths.extend([
+                '/usr/lib/x86_64-linux-gnu/pkgconfig', '/usr/share/pkgconfig'])
 
         return pkg_config_paths
 
