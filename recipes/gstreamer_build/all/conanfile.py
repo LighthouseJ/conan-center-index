@@ -111,7 +111,6 @@ class GStreamerBuildConan(ConanFile):
 
         # resolves conflict between wayland/1.19.0 (libffi/3.4.2) and
         # glib/2.68.0 (libffi/3.3)
-        self.requires("libffi/3.3", override=True)
         self.requires("libffi/3.3")
 
     @property
