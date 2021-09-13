@@ -191,7 +191,6 @@ class GStreamerBuildConan(ConanFile):
             meson.options["b_vscrt"] = str(
                 self.settings.compiler.runtime).lower()
 
-        meson.options['default-options'] = self.options.default_options
         meson.options['python'] = self.options.python
         meson.options['libav'] = self.options.libav
         meson.options['libnice'] = self.options.libnice
@@ -228,7 +227,8 @@ class GStreamerBuildConan(ConanFile):
         meson.configure(pkg_config_paths=pkg_config_paths,
                         build_folder=self._build_subfolder,
                         source_folder=self._source_subfolder,
-                        args=['--wrap-mode=nofallback'])
+                        args=['--wrap-mode=nofallback',
+                              '--default-library=' + self.options.default_library])
         self._meson = meson
         return self._meson
 
