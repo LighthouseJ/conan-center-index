@@ -18,6 +18,7 @@ class GStreamerBuildConan(ConanFile):
     license = "GPL-2.0-only"
     settings = "os", "arch", "compiler", "build_type"
     options = {"shared": [True, False], "fPIC": [True, False],
+               "default_library": ["static", "shared"],
                # subproject options -- forward to meson
                "python": ['enabled', 'auto', 'disabled'],
                "libav": ['enabled', 'auto', 'disabled'],
@@ -59,6 +60,7 @@ class GStreamerBuildConan(ConanFile):
 
     # https://gitlab.freedesktop.org/gstreamer/gst-build/-/blob/master/meson_options.txt
     default_options = {"shared": False, "fPIC": True,
+                       "default_library": "static",
                        "python": "auto",
                        "libav": "auto",
                        "libnice": "auto",
@@ -189,6 +191,7 @@ class GStreamerBuildConan(ConanFile):
             meson.options["b_vscrt"] = str(
                 self.settings.compiler.runtime).lower()
 
+        meson.options['default-options'] = self.options.default_options
         meson.options['python'] = self.options.python
         meson.options['libav'] = self.options.libav
         meson.options['libnice'] = self.options.libnice
