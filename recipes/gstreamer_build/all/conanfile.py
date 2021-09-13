@@ -227,8 +227,7 @@ class GStreamerBuildConan(ConanFile):
         meson.configure(pkg_config_paths=pkg_config_paths,
                         build_folder=self._build_subfolder,
                         source_folder=self._source_subfolder,
-                        args=['--wrap-mode=nofallback',
-                              '--default-library=' + str(self.options.default_library)])
+                        args=['--wrap-mode=nofallback'])
         self._meson = meson
         return self._meson
 
