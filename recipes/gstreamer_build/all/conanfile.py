@@ -109,10 +109,6 @@ class GStreamerBuildConan(ConanFile):
     def requirements(self):
         self.requires("glib/2.68.0")  # required by gdk-pixbuf/2.42.4 for gtk3
 
-        # resolves conflict between wayland/1.19.0 (libffi/3.4.2) and
-        # glib/2.68.0 (libffi/3.3)
-        self.requires("libffi/3.3", override=True)
-
     @property
     def _is_msvc(self):
         return self.settings.compiler == "Visual Studio"
