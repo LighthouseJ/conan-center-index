@@ -1,5 +1,6 @@
 from conans import ConanFile, CMake, tools
 import os
+import re
 
 required_conan_version = ">=1.33.0"
 
@@ -9,7 +10,7 @@ class IMGUIConan(ConanFile):
     url = "https://github.com/conan-io/conan-center-index"
     homepage = "https://github.com/ocornut/imgui"
     description = "Bloat-free Immediate Mode Graphical User interface for C++ with minimal dependencies"
-    topics = ("conan", "imgui", "gui", "graphical")
+    topics = ("dear", "imgui", "gui", "graphical", "bloat-free", )
     license = "MIT"
 
     settings = "os", "arch", "compiler", "build_type"
@@ -55,9 +56,11 @@ class IMGUIConan(ConanFile):
 
     def package(self):
         self.copy(pattern="LICENSE.txt", dst="licenses", src=self._source_subfolder)
+        m = re.match(r'cci\.\d{8}\+(?P<version>\d+\.\d+)\.docking', str(self.version))
+        version = tools.Version(m.group('version')) if m else tools.Version(self.version)
         backends_folder = os.path.join(
             self._source_subfolder,
-            "backends" if tools.Version(self.version) >= "1.80" else "examples"
+            "backends" if version >= "1.80" else "examples"
         )
         self.copy(pattern="imgui_impl_*",
                   dst=os.path.join("res", "bindings"),

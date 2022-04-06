@@ -1,5 +1,5 @@
 from conans import AutoToolsBuildEnvironment, ConanFile, tools
-from contextlib import contextmanager
+import contextlib
 import os
 import shutil
 
@@ -9,20 +9,21 @@ required_conan_version = ">=1.36.0"
 class TestPackageConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     exports_sources = "configure.ac", "config.h.in", "Makefile.in", "test_package_c.c", "test_package_cpp.cpp",
-    test_type = "build_requires"
+    test_type = "explicit"
 
     @property
     def _settings_build(self):
         return getattr(self, "settings_build", self.settings)
 
     def build_requirements(self):
+        self.build_requires(self.tested_reference_str)
         if self._settings_build.os == "Windows" and not tools.get_env("CONAN_BASH_PATH"):
             self.build_requires("msys2/cci.latest")
 
-    @contextmanager
+    @contextlib.contextmanager
     def _build_context(self):
         if self.settings.compiler == "Visual Studio":
-            with tools.vcvars(self.settings):
+            with tools.vcvars(self):
                 with tools.environment_append({"CC": "cl -nologo", "CXX": "cl -nologo",}):
                     yield
         else:
@@ -31,8 +32,10 @@ class TestPackageConan(ConanFile):
     def build(self):
         for src in self.exports_sources:
             shutil.copy(os.path.join(self.source_folder, src), self.build_folder)
-        self.run("{} --verbose".format(os.environ["AUTOCONF"]), win_bash=tools.os_info.is_windows)
-        self.run("{} --help".format(os.path.join(self.build_folder, "configure").replace("\\", "/")), win_bash=tools.os_info.is_windows)
+        self.run("{} --verbose".format(os.environ["AUTOCONF"]),
+                 win_bash=tools.os_info.is_windows, run_environment=True)
+        self.run("{} --help".format(os.path.join(self.build_folder, "configure").replace("\\", "/")),
+                 win_bash=tools.os_info.is_windows, run_environment=True)
         autotools = AutoToolsBuildEnvironment(self, win_bash=tools.os_info.is_windows)
         with self._build_context():
             autotools.configure()

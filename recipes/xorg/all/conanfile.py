@@ -10,7 +10,7 @@ class ConanXOrg(ConanFile):
     homepage = "https://www.x.org/wiki/"
     description = "The X.Org project provides an open source implementation of the X Window System."
     settings = "os"
-    topics = ("conan", "x11", "xorg")
+    topics = ("x11", "xorg")
 
     def configure(self):
         if self.settings.os not in ["Linux", "FreeBSD"]:
@@ -44,9 +44,14 @@ class ConanXOrg(ConanFile):
         packages = []
         if tools.os_info.is_linux and self.settings.os == "Linux":
             if tools.os_info.with_apt:
-                packages = ["xorg-dev", "libx11-xcb-dev", "libxcb-render0-dev", "libxcb-render-util0-dev", "libxcb-xkb-dev",
-                            "libxcb-icccm4-dev", "libxcb-image0-dev", "libxcb-keysyms1-dev", "libxcb-randr0-dev", "libxcb-shape0-dev",
-                            "libxcb-sync-dev", "libxcb-xfixes0-dev", "libxcb-xinerama0-dev", "xkb-data", "libxcb-dri3-dev"]
+                packages = ["libx11-dev", "libx11-xcb-dev", "libfontenc-dev", "libice-dev", "libsm-dev", "libxau-dev", "libxaw7-dev",
+                            "libxcomposite-dev", "libxcursor-dev", "libxdamage-dev", "libxdmcp-dev", "libxext-dev", "libxfixes-dev", 
+                            "libxft-dev", "libxi-dev", "libxinerama-dev", "libxkbfile-dev", "libxmu-dev", "libxmuu-dev", 
+                            "libxpm-dev", "libxrandr-dev", "libxrender-dev", "libxres-dev", "libxss-dev", "libxt-dev", "libxtst-dev", 
+                            "libxv-dev", "libxvmc-dev", "libxxf86vm-dev", "xtrans-dev", "libxcb-render0-dev",
+                            "libxcb-render-util0-dev", "libxcb-xkb-dev", "libxcb-icccm4-dev", "libxcb-image0-dev",
+                            "libxcb-keysyms1-dev", "libxcb-randr0-dev", "libxcb-shape0-dev", "libxcb-sync-dev", "libxcb-xfixes0-dev",
+                            "libxcb-xinerama0-dev", "xkb-data", "libxcb-dri3-dev", "uuid-dev"]
                 if (tools.os_info.linux_distro == "ubuntu" and tools.os_info.os_version < "15") or\
                    (tools.os_info.linux_distro == "debian" and tools.os_info.os_version < "12") or\
                    (tools.os_info.linux_distro == "raspbian" and tools.os_info.os_version < "12"):
@@ -59,15 +64,15 @@ class ConanXOrg(ConanFile):
                             "libxkbfile-devel", "libXrandr-devel", "libXres-devel", "libXScrnSaver-devel", "libXvMC-devel",
                             "xorg-x11-xtrans-devel", "xcb-util-wm-devel", "xcb-util-image-devel", "xcb-util-keysyms-devel",
                             "xcb-util-renderutil-devel", "libXdamage-devel", "libXxf86vm-devel", "libXv-devel",
-                            "xkeyboard-config-devel", "xcb-util-devel"]
+                            "xkeyboard-config-devel", "xcb-util-devel", "libuuid-devel"]
             elif tools.os_info.with_pacman:
                 packages = ["libxcb", "libfontenc", "libice", "libsm", "libxaw", "libxcomposite", "libxcursor",
                             "libxdamage", "libxdmcp", "libxft", "libxtst", "libxinerama", "libxkbfile", "libxrandr", "libxres",
                             "libxss", "libxvmc", "xtrans", "xcb-util-wm", "xcb-util-image","xcb-util-keysyms", "xcb-util-renderutil",
-                            "libxxf86vm", "libxv", "xkeyboard-config", "xcb-util"]
+                            "libxxf86vm", "libxv", "xkeyboard-config", "xcb-util", "util-linux-libs"]
             elif tools.os_info.with_zypper:
                 packages = ["xorg-x11-devel", "xcb-util-wm-devel", "xcb-util-image-devel", "xcb-util-keysyms-devel",
-                            "xcb-util-renderutil-devel", "xkeyboard-config", "xcb-util-devel"]
+                            "xcb-util-renderutil-devel", "xkeyboard-config", "xcb-util-devel", "libuuid-devel"]
             else:
                 self.output.warn("Do not know how to install 'xorg' for {}.".format(tools.os_info.linux_distro))
         
@@ -88,5 +93,8 @@ class ConanXOrg(ConanFile):
                      "xcb-xkb", "xcb-icccm", "xcb-image", "xcb-keysyms", "xcb-randr", "xcb-render",
                      "xcb-renderutil", "xcb-shape", "xcb-shm", "xcb-sync", "xcb-xfixes",
                      "xcb-xinerama", "xcb", "xkeyboard-config", "xcb-atom", "xcb-aux", "xcb-event", "xcb-util",
-                     "xcb-dri3"]:
+                     "xcb-dri3"] + ([] if self.settings.os == "FreeBSD" else ["uuid"]):
             self._fill_cppinfo_from_pkgconfig(name)
+        if self.settings.os == "Linux":
+            self.cpp_info.components["sm"].requires.append("uuid")
+

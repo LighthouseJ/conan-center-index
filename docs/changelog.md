@@ -1,5 +1,161 @@
 # Changelog
 
+### 31-March-2022 - 11:55 CEST
+
+- [config] Upgrade Conan client version to 1.45.0.
+
+### 25-March-2022 - 09:54 CET
+
+- [feature] Updated CMake version to 3.20 only in MacOS machines.
+- [feature] Collect requirements from test_package as well.
+- [feature] Make the conan-center-bot write a comment after merging a `Bump version` or `Bump dependencies` labeled pull request.
+- [feature] Allow SecheduledExportCheck job to report in any issue.
+- [feature] DSL: Add cron triggers to some jobs.
+- [feature] DSL: Disable concurrent builds on some jobs.
+- [feature] Adapt paths for Ansible machines.
+- [bugfix] Fix wrong log links in conan-center-bot message.
+- [fix] Use consistent slashes in paths.
+- [fix] Fix alert for job cancellation.
+
+### 09-March-2022 - 13:37 CET
+
+- [feature] Merge pull-requests that bump version automatically.
+- [feature] Get requirements from `conan info --dry-build` command.
+- [feature] Use reference with recipe revision for `conan info` commands.
+- [feature] Add possibility to load the configuration from file.
+- [fix] Fix DSL typo for access request job.
+- [fix] Removed retries from pull-request builds (introduced long ago to avoid timeout issues).
+- [refactor] Completely remove resource locking for executors.
+
+### 24-February-2022 - 14:03 CET
+
+- [fix] Fix encoding issues in `summary.html` file.
+- [fix] Specify branch discovery in DSL for cci multibranch job.
+
+### 22-February-2022 - 10:26 CET
+
+- [feature] Merge pull-request that bump dependencies automatically.
+- [feature] Notify about Visual Studio license status in ValidateInfrastructure.
+- [config] Upgrade Conan client version to 1.44.1.
+- [fix] Fix potential race condition calculating package IDs.
+
+### 16-February-2022 - 12:46 CET
+
+- [fix] Pin Artifactory client library version.
+
+### 10-February-2022 - 16:44 CET
+
+- [fix] Fix DSL parameters and TapaholesList name.
+- [feature] Added ConanReference string conversion in call-stacks.
+- [fix] Fix ValidateInfrastructure executors and labels count.
+
+### 04-February-2022 - 12:48 CET
+
+- [bugfix] Avoid race-conditions in Conan client instance.
+- [hotfix] Race condition reading/writing a file.
+
+### 03-February-2022 - 17:01 CET
+
+- [feature] New label to identify pull-requests that are just bumping dependencies version.
+- [bugfix] Fixed bugs with promotion and properties for references that don't build any binary.
+- [feature] Add parameter to chose if documentation of supported platforms should be updated automatically.
+- [feature] Improve Conan version regex to accept development versions
+
+### 26-January-2022 - 11:14 CET
+
+- [config] Add MacOS apple-clang 13.0 configuration to a new epoch.
+- [feature] Handle `header_only=True` default option in recipes.
+- [feature] Notify failed builds due to expired Visual Studio licenses.
+- [feature] Tapaholes job now sets epoch as well.
+- [fix] Throw error if configuration file to use is not found.
+- [feature] Add missing DSL job descriptions.
+- [feature] Child jobs use the same parent folder.
+- [refactor] Remove resource locking.
+
+### 18-January-2022 - 16:49 CET
+
+- [config] Bump Conan client version to 1.43.3.
+
+### 29-December-2021 - 16:41 CET
+
+- [config] Add Linux GCC 11, Clang 12 & 13 configurations with new epoch feature.
+- [config] Drop Linux GCC 6 and clang 10 configurations.
+- [fix] Fixed some unexpected errors.
+- [feature] Prepare pipeline to work with ansible provisioned machines.
+
+### 17-December-2021 - 09:56 CET
+
+- [feature] Introduce 'epoch' concept to build configurations as a strategy to build packages for new compilers.
+- [feature] Allow pull-requests to build packages from different recipes for the same library.
+- [feature] Profiles and logs from builds in the packages generated summary are now open in a new tab.
+- [fix] Improve error reporting of mismatched revision in PRs.
+
+### 14-December-2021 - 09:13 CET
+
+- [config] Bump Conan client version to 1.43.0.
+
+### 01-December-2021 - 12:29 CET
+
+- [config] Bump Conan client version to 1.42.2.
+
+### 24-November-2021 - 17:49 CET
+
+- [feature] Return host requirements when computing package IDs.
+
+### 22-November-2021 - 17:53 CET
+
+- [feature] Cache computation of package IDs.
+
+### 15-November-2021 - 11:03 CET
+
+- [feature] Add `xlarge` pod size in Linux for building packages with higher memory requirements.
+
+### 11-November-2021 - 13:22 CET
+
+- [config] Bump Conan client version to 1.41.0
+- [fix] Identify PRs to `CONTRIBUTING.md` as changes in docs.
+- [feature] Added Jenkins DSLs for job descriptions.
+- [fix] Parse integer value when assigning properties.
+
+### 18-October-2021 - 17:05 CEST
+ - [config] Upgrade Conan version to 1.40.4
+ - [fix] Replace `Unauthorized User` label by `User-approval pending`
+ - [feat] Remove `os_build` and `arch_build` from generated profiles
+
+### 11-October-2021 - 12:14 CEST
+ - [configs] Configurable Github statuses to check
+ - [configs] Pairing between configurations and workers (docker images, win/macos servers,...) is configurable in runtime.
+ - [feature] Early(iest) stop after failure: ignore any extra messages. It provides faster feedback for users.
+ - [feature] Skip stale pull-requests from automatic review requests.
+ - [feature] Add node-pool with more resources. It allows the CI to delegate certain builds that require higher RAM limits to it (configured manually).
+ - [fix] Removed EAP, now it should be named _"Access requests"_ everywhere
+ - [fix] Improved checks for infrastructure and configuration. It also fixes the auto-generated documentation for _"Supported platforms and configurations"_.
+ - [job] New job to remove dead branches from CI
+
+### 01-October-2021 - 13:08 CEST
+
+- [hotfix] Apply patch for https://github.com/conan-io/conan/issues/9695 (Added root certificate for Let's encrypt)
+
+### 21-September-2021 - 12:09 CEST
+
+- [config] Upgrade Conan version to 1.39.0.
+
+### 7-September-2021 - 16:49 CEST
+
+- [configs] Remove Visual Studio 2015
+- [configs] Remove Macos apple-clang 10
+- [configs] Remove Linux GCC 4.9
+- [configs] Linux Clang: keep only latest versions 10 and 11
+- [feature] Rename EAP to Access Request.
+- [feature] Display merge error in pull-requests.
+
+### 6-September-2021 - 11:15 CEST
+
+- [feature] Display useful CI status notifications in Github pull requests.
+- [feature] Upgrade Conan client version to 1.38.0.
+- [feature] Move the Conan and Artifactory configuration out of the Jenkins library.
+- [feature] Use separated files for the different profile configurations.
+
 ### 3-August-2021 - 13:29 CEST
 
 - [feature] BuildSingleReference: Create packages for apple-clang armv8 (Apple M1) in pull-requests' builds.

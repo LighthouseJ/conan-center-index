@@ -1,7 +1,9 @@
 from conans import ConanFile, CMake, tools
 from conans.errors import ConanInvalidConfiguration
 
-required_conan_version = ">=1.33.0"
+import os
+
+required_conan_version = ">=1.36.0"
 
 
 class libuvConan(ConanFile):
@@ -10,9 +12,9 @@ class libuvConan(ConanFile):
     url = "https://github.com/conan-io/conan-center-index"
     homepage = "https://libuv.org"
     description = "A multi-platform support library with a focus on asynchronous I/O"
-    topics = ("libuv", "asynchronous", "io", "networking", "multi-platform", "conan-recipe")
+    topics = ("libuv", "asynchronous", "io", "networking", "multi-platform")
 
-    settings = "os", "compiler", "build_type", "arch"
+    settings = "os", "arch", "compiler", "build_type"
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
@@ -23,16 +25,16 @@ class libuvConan(ConanFile):
     }
 
     generators = "cmake"
-    exports_sources = [
-        "CMakeLists.txt",
-        "patches/*"
-    ]
-
     _cmake = None
 
     @property
     def _source_subfolder(self):
         return "source_subfolder"
+
+    def export_sources(self):
+        self.copy("CMakeLists.txt")
+        for patch in self.conan_data.get("patches", {}).get(self.version, []):
+            self.copy(patch["patch_file"])
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -68,11 +70,14 @@ class libuvConan(ConanFile):
         cmake.build()
 
     def package(self):
+        self.copy("LICENSE", dst="licenses", src=self._source_subfolder)
+        self.copy("LICENSE-docs", dst="licenses", src=self._source_subfolder)
         cmake = self._configure_cmake()
         cmake.install()
+        tools.rmdir(os.path.join(self.package_folder, "lib", "cmake"))
 
     def package_info(self):
-        self.cpp_info.names["pkg_config"] = "libuv"
+        self.cpp_info.set_property("pkg_config_name", "libuv")
         self.cpp_info.libs = ["uv" if self.options.shared else "uv_a"]
         if self.options.shared:
             self.cpp_info.defines = ["USING_UV_SHARED=1"]

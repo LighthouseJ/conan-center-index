@@ -3,14 +3,14 @@ from conans.errors import ConanInvalidConfiguration
 import os
 import glob
 
+required_conan_version = ">=1.33.0"
 
 class ElfutilsConan(ConanFile):
     name = "elfutils"
     description = "A dwarf, dwfl and dwelf functions to read DWARF, find separate debuginfo, symbols and inspect process state."
     homepage = "https://sourceware.org/elfutils"
     url = "https://github.com/conan-io/conan-center-index"
-    topics = ("conan", "elfutils", "libelf", "libdw", "libasm")
-    exports = "patches/**"
+    topics = ("elfutils", "libelf", "libdw", "libasm")
     license = ["GPL-1.0-or-later", "LGPL-3.0-or-later", "GPL-2.0-or-later"]
     
     settings = "os", "arch", "compiler", "build_type"
@@ -21,7 +21,6 @@ class ElfutilsConan(ConanFile):
         "with_bzlib": [True, False],
         "with_lzma": [True, False],
         "with_sqlite3": [True, False],
-        "with_zlib": [True, False],
     }
     default_options = {
         "shared": False,
@@ -30,13 +29,16 @@ class ElfutilsConan(ConanFile):
         "with_bzlib": True,
         "with_lzma": True,
         "with_sqlite3": False,
-        "with_zlib": True,
     }
 
     generators = "pkg_config"
 
     _autotools = None
     _source_subfolder = "source_subfolder"
+
+    def export_sources(self):
+        for patch in self.conan_data.get("patches", {}).get(self.version, []):
+            self.copy(patch["patch_file"])
 
     def config_options(self):
         if self.settings.os == 'Windows':
@@ -47,6 +49,8 @@ class ElfutilsConan(ConanFile):
             del self.options.fPIC
         del self.settings.compiler.libcxx
         del self.settings.compiler.cppstd
+
+    def validate(self):
         if self.settings.compiler in ["Visual Studio", "clang", "apple-clang"]:
             raise ConanInvalidConfiguration("Compiler %s not supported. "
                           "elfutils only supports gcc" % self.settings.compiler)
@@ -54,32 +58,33 @@ class ElfutilsConan(ConanFile):
             self.output.warn("Compiler %s is not gcc." % self.settings.compiler)
 
     def requirements(self):
+        self.requires("zlib/1.2.11")
         if self.options.with_sqlite3:
-            self.requires("sqlite3/3.31.1")
+            self.requires("sqlite3/3.37.0")
         if self.options.with_bzlib:
-            self.requires("bzip2/1.0.6")
-        if self.options.with_zlib:
-            self.requires("zlib/1.2.11")
+            self.requires("bzip2/1.0.8")
         if self.options.with_lzma:
-            self.requires("xz_utils/5.2.4")
+            self.requires("xz_utils/5.2.5")
         if self.options.debuginfod:
             # FIXME: missing recipe for libmicrohttpd
             raise ConanInvalidConfiguration("libmicrohttpd is not available (yet) on CCI")
 
+    @property
+    def _settings_build(self):
+        return getattr(self, "settings_build", self.settings)
+
     def build_requirements(self):
-        self.build_requires("automake/1.16.2")
-        self.build_requires("m4/1.4.18")
+        self.build_requires("automake/1.16.4")
+        self.build_requires("m4/1.4.19")
         self.build_requires("flex/2.6.4")
-        self.build_requires("bison/3.5.3")
-        self.build_requires("pkgconf/1.7.3")
-        if tools.os_info.is_windows and not tools.get_env("CONAN_BASH_PATH") and \
-                tools.os_info.detect_windows_subsystem() != "msys2":
-            self.build_requires("msys2/20190524")
+        self.build_requires("bison/3.7.6")
+        self.build_requires("pkgconf/1.7.4")
+        if self._settings_build.os == "Windows" and not tools.get_env("CONAN_BASH_PATH"):
+            self.build_requires("msys2/cci.latest")
     
     def source(self):
-        tools.get(**self.conan_data["sources"][self.version])
-        extracted_dir = "elfutils" + "-" + self.version
-        os.rename(extracted_dir, self._source_subfolder)
+        tools.get(**self.conan_data["sources"][self.version],
+                  strip_root=True, destination=self._source_subfolder)
 
     def _configure_autotools(self):
         if not self._autotools:
@@ -88,7 +93,7 @@ class ElfutilsConan(ConanFile):
                 "--enable-static={}".format("no" if self.options.shared else "yes"),
                 "--enable-deterministic-archives",
                 "--enable-silent-rules",
-                "--with-zlib" if self.options.with_zlib else "--without-zlib",
+                "--with-zlib",
                 "--with-bzlib" if self.options.with_bzlib else "--without-bzlib",
                 "--with-lzma" if self.options.with_lzma else "--without-lzma",
                 "--enable-debuginfod" if self.options.debuginfod else "--disable-debuginfod",
@@ -113,13 +118,10 @@ class ElfutilsConan(ConanFile):
         tools.rmdir(os.path.join(self.package_folder, "share"))
         tools.rmdir(os.path.join(self.package_folder, "lib", "pkgconfig"))
         if self.options.shared:
-            for f in glob.glob(os.path.join(self.package_folder, "lib", "*.a")):
-                os.remove(f)
+            tools.remove_files_by_mask(os.path.join(self.package_folder, "lib"), "*.a")
         else:
-            for f in glob.glob(os.path.join(self.package_folder, "lib", "*.so")):
-                os.remove(f)
-            for f in glob.glob(os.path.join(self.package_folder, "lib", "*.so.1")):
-                os.remove(f)
+            tools.remove_files_by_mask(os.path.join(self.package_folder, "lib"), "*.so")
+            tools.remove_files_by_mask(os.path.join(self.package_folder, "lib"), "*.so.1")
         
     def package_info(self):
         # library components
@@ -127,7 +129,11 @@ class ElfutilsConan(ConanFile):
         self.cpp_info.components["libelf"].requires = ["zlib::zlib"]
 
         self.cpp_info.components["libdw"].libs = ["dw"]
-        self.cpp_info.components["libdw"].requires = ["libelf", "zlib::zlib", "bzip2::bzip2", "xz_utils::xz_utils"]
+        self.cpp_info.components["libdw"].requires = ["libelf", "zlib::zlib"]
+        if self.options.with_bzlib:
+            self.cpp_info.components["libdw"].requires.append("bzip2::bzip2")
+        if self.options.with_lzma:
+            self.cpp_info.components["libdw"].requires.append("xz_utils::xz_utils")
 
         self.cpp_info.components["libasm"].includedirs = ["include/elfutils"]
         self.cpp_info.components["libasm"].libs = ["asm"]

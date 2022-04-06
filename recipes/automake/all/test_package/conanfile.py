@@ -10,13 +10,17 @@ class TestPackageConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
     exports_sources = "configure.ac", "Makefile.am", "test_package_1.c", "test_package.cpp"
     # DON'T COPY extra.m4 TO BUILD FOLDER!!!
-    test_type = "build_requires"
+    test_type = "explicit"
 
     @property
     def _settings_build(self):
         return getattr(self, "settings_build", self.settings)
 
+    def requirements(self):
+        self.requires(self.tested_reference_str)
+
     def build_requirements(self):
+        self.build_requires(self.tested_reference_str)
         if self._settings_build.os == "Windows" and not tools.get_env("CONAN_BASH_PATH"):
             self.build_requires("msys2/cci.latest")
 
@@ -42,11 +46,15 @@ class TestPackageConan(ConanFile):
         if not system_cc:
             system_cc = self._default_cc.get(str(self.settings.compiler))
         return system_cc
+    
+    @property
+    def _user_info(self):
+        return getattr(self, "user_info_build", self.deps_user_info)
 
     def _build_scripts(self):
         """Test compile script of automake"""
-        compile_script = self.deps_user_info["automake"].compile
-        ar_script = self.deps_user_info["automake"].ar_lib
+        compile_script = self._user_info["automake"].compile
+        ar_script = self._user_info["automake"].ar_lib
         assert os.path.isfile(ar_script)
         assert os.path.isfile(compile_script)
 
